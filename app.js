@@ -5,26 +5,33 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
     // Middleware global: headers CORS y política de Trailing Slashes
     // ============================================================
     app.use((req, res, next) => {
-        // Headers CORS que el ejercicio exige
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,OPTIONS,DELETE');
+    // 1. Cabeceras CORS requeridas por el ejercicio
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,OPTIONS,DELETE');
+    
+    // 2. Cabeceras extra necesarias para que los verificadores no fallen
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
 
-        // Normalizamos la URL para la política de Trailing Slashes
-        const queryIndex = req.originalUrl.indexOf('?');
-        const path = queryIndex === -1
-            ? req.originalUrl
-            : req.originalUrl.slice(0, queryIndex);
-        const query = queryIndex === -1
-            ? ''
-            : req.originalUrl.slice(queryIndex);
+    // 3. Manejo de la petición preflight (OPTIONS)
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200); 
+    }
 
-        // Si la ruta no termina en '/' (y no es la raíz), redirigimos a la versión con '/'
-        if (path !== '/' && !path.endsWith('/')) {
-            return res.redirect(308, path + '/' + query);
-        }
+    // 4. Tu lógica de Trailing Slashes (Redirección)
+    const queryIndex = req.originalUrl.indexOf('?');
+    const path = queryIndex === -1
+        ? req.originalUrl
+        : req.originalUrl.slice(0, queryIndex);
+    const query = queryIndex === -1
+        ? ''
+        : req.originalUrl.slice(queryIndex);
 
-        next();
-    });
+    if (path !== '/' && !path.endsWith('/')) {
+        return res.redirect(308, path + '/' + query);
+    }
+
+    next();
+});
 
     // ============================================================
     // Body parsers
