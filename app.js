@@ -1,11 +1,15 @@
-export default function appSrc(express, bodyParser, createReadStream, crypto, http, cors) {
+export default function appSrc(express, bodyParser, createReadStream, crypto, http) {
     const app = express();
 
-    // 1. Usamos el paquete cors. Esto soluciona los problemas de CORS y los preflight (OPTIONS) automáticamente.
-    app.use(cors()); 
-
-    // 2. Middleware para la política de Trailing Slashes
     app.use((req, res, next) => {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,OPTIONS,DELETE');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+        if (req.method === 'OPTIONS') {
+            return res.sendStatus(200);
+        }
+
         const queryIndex = req.originalUrl.indexOf('?');
         const path = queryIndex === -1 ? req.originalUrl : req.originalUrl.slice(0, queryIndex);
         const query = queryIndex === -1 ? '' : req.originalUrl.slice(queryIndex);
@@ -13,14 +17,13 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
         if (path !== '/' && !path.endsWith('/')) {
             return res.redirect(308, path + '/' + query);
         }
+
         next();
     });
 
-    // 3. Body parsers
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(bodyParser.json());
 
-    // 4. Rutas
     app.get('/login/', (req, res) => {
         res.send('angel36b');
     });
@@ -42,8 +45,12 @@ export default function appSrc(express, bodyParser, createReadStream, crypto, ht
         http.get(addr, (response) => {
             response.setEncoding('utf8');
             let data = '';
-            response.on('data', (chunk) => { data += chunk; });
-            response.on('end', () => { res.type('text/plain').send(data); });
+            response.on('data', (chunk) => {
+                data += chunk;
+            });
+            response.on('end', () => {
+                res.type('text/plain').send(data);
+            });
         }).on('error', (err) => {
             res.status(500).send('Error: ' + err.message);
         });
